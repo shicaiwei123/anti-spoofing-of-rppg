@@ -1,0 +1,76 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>afa8ccf9-1320-46be-ac4e-7c7d44c40595</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <StartupFile>rPPG_GUI.py</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <Name>VideoHealthMonitoring</Name>
+    <RootNamespace>VideoHealthMonitoring</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="csk.py" />
+    <Compile Include="csk_facedetection.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="mat_exporter.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="rPPG_Extracter_denseflow.py" />
+    <Compile Include="rPPG_lukas_Extracter.py" />
+    <Compile Include="rPPG_Extracter.py" />
+    <Compile Include="rPPG_GUI.py" />
+    <Compile Include="rPPG_preprocessing.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="rPPG_processing_realtime.py" />
+    <Compile Include="util\func_util.py" />
+    <Compile Include="util\opencv_util.py" />
+    <Compile Include="util\pyqtgraph_util.py" />
+    <Compile Include="util\qt_util.py" />
+    <Compile Include="util\style.py" />
+    <Compile Include="util\__init__.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="util\" />
+    <Folder Include="util\__pycache__\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="13kmh.mp4" />
+    <Content Include="haarcascade_frontalface_default.xml" />
+    <Content Include="placeholder.png" />
+    <Content Include="util\Border.png" />
+    <Content Include="util\desktop.ini" />
+    <Content Include="util\lines.html" />
+    <Content Include="util\RSD_Python.pyproj" />
+    <Content Include="util\__pycache__\desktop.ini" />
+    <Content Include="util\__pycache__\FuncUtil.cpython-36.pyc" />
+    <Content Include="util\__pycache__\func_util.cpython-36.pyc" />
+    <Content Include="util\__pycache__\opencv_util.cpython-36.pyc" />
+    <Content Include="util\__pycache__\pyqtgraph_util.cpython-36.pyc" />
+    <Content Include="util\__pycache__\qt_util.cpython-36.pyc" />
+    <Content Include="util\__pycache__\style.cpython-36.pyc" />
+    <Content Include="util\__pycache__\__init__.cpython-36.pyc" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+  <!-- Uncomment the CoreCompile target to enable the Build command in
+       Visual Studio and specify your pre- and post-build commands in
+       the BeforeBuild and AfterBuild targets below. -->
+  <!--<Target Name="CoreCompile" />-->
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+</Project>
