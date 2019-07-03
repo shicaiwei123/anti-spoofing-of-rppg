@@ -24,6 +24,17 @@ import  numpy as  np
 # print(rect)
 
 
-# 列表的维度
-a=[]
+#初始化高维数组
+a=[[[1]*3]*4]*5
+b=np.array(a)
+
+c=[[[2]*3]*4]*5
+d=np.array(c)
+
+e=np.vstack((b,c))
+print(e)
+
+
+print(b)
+
 

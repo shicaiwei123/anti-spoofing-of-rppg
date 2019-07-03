@@ -35,10 +35,10 @@ from VideoHealthMonitoring.rPPG_processing_realtime import extract_pulse
 
 ## Creates The App 
 
-fftlength = 200
+fftlength = 300
 
-# f = np.linspace(0, fs / 2, int(fftlength / 2 + 1)) * 60
-f = np.linspace(0, fs / 2, 151) * 60
+f = np.linspace(0, fs / 2, int(fftlength / 2 + 1)) * 60
+# f = np.linspace(0, fs / 2, 151) * 60
 settings = Settings()
 
 
@@ -190,7 +190,7 @@ def update(load_frame, rPPG_extracter, rPPG_extracter_lukas, settings: Settings)
         t = np.arange(num_frames) / fs
 
         plt_bpm.setData(f, pulse[0])
-        plt_bpm_right.setData(f, pulse[1])
+        plt_bpm_right.setData(f, pulse[2])
 
         plt_r.setData(t[start:num_frames], rppg_one[0, start:num_frames])
         plt_g.setData(t[start:num_frames], rppg_one[1, start:num_frames])

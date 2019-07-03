@@ -12,12 +12,12 @@ def extract_pulse(rPPG,fftlength,fs_video):
 
     # 必须要先收集那么多次照片。
     if(rPPG.shape[1] < fftlength):
-        # return np.zeros(int(fftlength/2)+1)
-        return np.zeros(151)
+        return np.zeros(int(fftlength/2)+1)
+        # return np.zeros(151)
 
 
-    # fft_roi = range(int(fftlength/2+1)) # We only care about this part of the fft because it is symmetric anyway
-    fft_roi=range(151)
+    fft_roi = range(int(fftlength/2+1)) # We only care about this part of the fft because it is symmetric anyway
+    # fft_roi=range(151)
     bpf_div= 60 * fs_video / 2
     b_BPF40220,a_BPF40220 = signal.butter(10, ([60/bpf_div, 300/bpf_div]),  'bandpass')
     

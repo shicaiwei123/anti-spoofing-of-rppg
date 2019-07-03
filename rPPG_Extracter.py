@@ -114,12 +114,12 @@ class rPPG_Extracter():
         '''
         frame_local = []
         # 坐标
-        distance = 0
-        x1 = key[29][1] - distance
+        x1 = key[29][1]
         x2 = key[9][1]
         y1 = key[3][0]
         y2 = key[30][0]
         y3 = key[13][0]
+
 
         frame_cropped = frame[x1:x2, y1:y2]
         frame_local.append(frame_cropped)
@@ -127,11 +127,43 @@ class rPPG_Extracter():
         frame_right = frame[x1:x2, y2:y3]
         frame_local.append(frame_right)
 
+
+        #左边背景
+        distance=y2-y1
+        y0=y1-distance*2
+        y4=y3+distance*2
+
+        # 拉远距离，避免人脸的出现
+        y1=y1-distance
+        y3=y3+distance
+
+        if y0<0:
+            background_left_negtive=frame[x1:x2,y0:-1]
+            background_left_postive=frame[x1:x2,0:y1]
+            background_left=np.hstack((background_left_negtive,background_left_postive))
+        else:
+            background_left=frame[x1:x2,y0:y1]
+        frame_local.append(background_left)
+
+        # 右边背景
+        if y4>640:
+            background_right_negetive=frame[x1:x2,0:y4-640]
+            background_right_postive=frame[x1:x2,y3:640]
+            background_right=np.hstack((background_right_negetive,background_right_postive))
+        else:
+            background_right=frame[x1:x2,y3:y4]
+
+        frame_local.append(background_right)
+
+
         # 绘图
         cv2.imshow("picture", frame)
-        if frame_local is not None:
-            cv2.imshow("face", frame_local[0])
-
+        # if frame_local is not None:
+        #     cv2.imshow("face1", frame_local[0])
+        #     cv2.imshow("face2", frame_local[1])
+        #
+        #     cv2.imshow("back1", background_right)
+        #     cv2.imshow("back2", background_left)
         return frame_local
 
     def process_frame_global(self, frame, sub_roi):
@@ -187,14 +219,6 @@ class rPPG_Extracter():
 
         # 利用关键点分割，返回多个局部人脸
         frame_cropped = self.get_local_face(frame, key)
-
-        # 用自己规定的区域提取人脸，不过没有用的到
-        if len(sub_roi) > 0:
-            print("sub_roi")
-            sub_roi_rect = get_subroi_rect(frame_cropped, sub_roi)
-            frame_cropped = crop_frame(frame_cropped, sub_roi_rect)
-            gray_frame = crop_frame(gray_frame, sub_roi_rect)
-            self.sub_roi_rect = sub_roi_rect
 
         num_pixels = frame.shape[0] * frame.shape[1]
 
