@@ -158,12 +158,11 @@ class rPPG_Extracter():
 
         # 绘图
         cv2.imshow("picture", frame)
-        # if frame_local is not None:
-        #     cv2.imshow("face1", frame_local[0])
-        #     cv2.imshow("face2", frame_local[1])
-        #
-        #     cv2.imshow("back1", background_right)
-        #     cv2.imshow("back2", background_left)
+        temp=frame_local[0]
+        if list(frame_local[0]) !=[]:
+            cv2.imshow("face1", frame_local[0])
+            cv2.imshow("face2", frame_local[1])
+
         return frame_local
 
     def process_frame_global(self, frame, sub_roi):

@@ -18,7 +18,7 @@ class Settings():
 # source = "C:\\Users\\marti\\Downloads\\Data\\13kmh.mp4" # stationary\\bmp\\"
 # source = "C:\\Users\\marti\\Downloads\\Data\\stationary\\bmp\\"
 source = "webcam"
-fs = 30  # Please change to the capture rate of the footage.    镜头采样率
+fs = 20  # Please change to the capture rate of the footage.    镜头采样率
 
 ############################## APP #######################################################
 
@@ -121,6 +121,25 @@ def extract_pulse_local(rppg, fs):
 
     return pulse
 
+def pulse_process(pulse_list):
+    # 相乘
+    face_multil_face=pulse_list[0]*pulse_list[1]
+    face_mutil_ground=pulse_list[0]*pulse_list[2]
+    ground_mutil_ground=pulse_list[1]*pulse_list[2]
+
+    #相减
+    face_sub_face=pulse_list[0] - pulse_list[1]
+    face_sub_ground=pulse_list[0] - pulse_list[2]
+    face_distance_face=face_sub_face**2
+    face_distance_ground=face_sub_ground**2
+
+    #相关
+    face_cor_face_data=np.array([pulse_list[0],pulse_list[1]])
+    face_cor_face=np.corrcoef(face_cor_face_data)
+    ground_cor_ground_data=np.array([pulse_list[2],pulse_list[3]])
+    ground_cor_ground=np.array(ground_cor_ground_data)
+
+    return [face_multil_face,ground_mutil_ground,face_cor_face,ground_cor_ground]
 
 def update(load_frame, rPPG_extracter, rPPG_extracter_lukas, settings: Settings):
     '''
@@ -189,15 +208,19 @@ def update(load_frame, rPPG_extracter, rPPG_extracter_lukas, settings: Settings)
         # 从0开始，每一帧的真实时间
         t = np.arange(num_frames) / fs
 
-        plt_bpm.setData(f, pulse[0])
-        plt_bpm_right.setData(f, pulse[2])
+        multil_process=pulse_process(pulse)
+        plt_bpm.setData(f, multil_process[0])
+        plt_bpm_right.setData(f, multil_process[1])
+        print("face_to_face",multil_process[2])
+        print("ground_to_ground",multil_process[3])
+
 
         plt_r.setData(t[start:num_frames], rppg_one[0, start:num_frames])
         plt_g.setData(t[start:num_frames], rppg_one[1, start:num_frames])
         plt_b.setData(t[start:num_frames], rppg_one[2, start:num_frames])
 
         # 求能量然后取最值
-        bpm = f[np.argmax(pulse[0])]
+        bpm = f[np.argmax(multil_process[1])]
         fig_bpm.setTitle('Frequency : PR = ' + str(bpm) + ' BPM')
 
     # # print(fps)

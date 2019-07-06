@@ -24,17 +24,24 @@ import  numpy as  np
 # print(rect)
 
 
-#初始化高维数组
-a=[[[1]*3]*4]*5
-b=np.array(a)
+# #初始化高维数组
+# a=[[[1]*3]*4]*5
+# b=np.array(a)
+#
+# c=[[[2]*3]*4]*5
+# d=np.array(c)
+#
+# e=np.vstack((b,c))
+# print(e)
+#
+#
+# print(b)
 
-c=[[[2]*3]*4]*5
-d=np.array(c)
-
-e=np.vstack((b,c))
-print(e)
-
-
-print(b)
+# 求相关
+a=np.array([1,7,3,90,5])
+b=np.array([5,6,7,8,9])
+ab=np.array([a,b])
+c=np.corrcoef(ab)
+print(c)
 
 
