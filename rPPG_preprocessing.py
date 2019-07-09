@@ -5,7 +5,7 @@ import time
 import os
 import matplotlib.pyplot as plt
 import scipy.io as sio
-from VideoHealthMonitoring.util.opencv_util import *
+from util.opencv_util import *
 
 lower = np.array([0, 48, 80], dtype="uint8")
 upper = np.array([20, 255, 255], dtype="uint8")
@@ -43,7 +43,7 @@ def crop_frame(frame, rect):
 def crop_to_face(frame, gray, prev_face):
     # faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(5, 5))
-    # print(faces)
+    print(faces)
 
     # print(prev_face)
     if len(faces) == 0:

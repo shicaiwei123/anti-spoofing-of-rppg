@@ -5,9 +5,9 @@ import time
 import os
 import matplotlib.pyplot as plt
 import scipy.io as sio
-from VideoHealthMonitoring.util.opencv_util import *
-from VideoHealthMonitoring.rPPG_preprocessing import *
-from VideoHealthMonitoring.FaceDetection import c_face_detection
+from util.opencv_util import *
+from rPPG_preprocessing import *
+from FaceDetection import c_face_detection
 import math
 import dlib
 import datetime
@@ -19,7 +19,7 @@ class rPPG_Extracter():
     def __init__(self):
         self.prev_face = [0, 0, 0, 0]  # 脸部脚点,随机赋值
         self.skin_prev = []
-        self.rPPG = [[],[],[],[],[],[],[],[],[],[]]
+        self.rPPG = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
         self.rPPG_right = []
         self.sub_roi_rect = []
         PREDICTOR_PATH = "shape_predictor_68_face_landmarks.dat"
@@ -105,6 +105,23 @@ class rPPG_Extracter():
         # print(self.prev_face)
         return frame_cropped
 
+    def coor_to_face(self, x_list, y_list, frame):
+        x_len = len(x_list)
+        y_len = len(y_list)
+        local_face_list = []
+        for i in range(x_len - 1):
+            if i <x_len-2:
+                for j in range(y_len - 1):
+                    local_face = frame[x_list[i]:x_list[i + 1], y_list[j]:y_list[j + 1]]
+                    local_face_list.append(local_face)
+
+            # 对最后一行单独处理
+            else:
+                for j in range(1,y_len-2):
+                    local_face = frame[x_list[i]:x_list[i + 1], y_list[j]:y_list[j + 1]]
+                    local_face_list.append(local_face)
+        return local_face_list
+
     def get_local_face(self, frame, key):
         '''
         获取脸局部信息，鼻子以下，两个部位，或者多个部位
@@ -113,55 +130,71 @@ class rPPG_Extracter():
         :return:
         '''
         frame_local = []
+        x_list = []
+        y_list = []
         # 坐标
-        x1 = key[29][1]
+        x1 = key[28][1]
         x2 = key[9][1]
+        x3 = key[34][1]
+        x_mid_up = int((x1 + x3) / 2)
+        x_mid_down = int((x3 + x2) / 2)
+        x_list.append(x1)
+        # x_list.append(x_mid_up)
+        x_list.append(x3)
+        # x_list.append(x_mid_down)
+        x_list.append(x2)
+
         y1 = key[3][0]
         y2 = key[30][0]
         y3 = key[13][0]
+        y_mid_left = int((y1 + y2) / 2)
+        y_mid_right = int((y2 + y3) / 2)
+        y_list.append(y1)
+        y_list.append(y_mid_left)
+        y_list.append(y2)
+        y_list.append(y_mid_right)
+        y_list.append(y3)
 
+        local_face_List = self.coor_to_face(x_list, y_list, frame)
+        frame_local = local_face_List
 
-        frame_cropped = frame[x1:x2, y1:y2]
-        frame_local.append(frame_cropped)
-
-        frame_right = frame[x1:x2, y2:y3]
-        frame_local.append(frame_right)
-
-
-        #左边背景
-        distance=y2-y1
-        y0=y1-distance*2
-        y4=y3+distance*2
+        # 左边背景
+        distance = y_mid_left - y1
+        y0 = y1 - distance * 3
+        y4 = y3 + distance * 3
 
         # 拉远距离，避免人脸的出现
-        y1=y1-distance
-        y3=y3+distance
+        y1 = y1 - distance * 2
+        y3 = y3 + distance * 2
 
-        if y0<0:
-            background_left_negtive=frame[x1:x2,y0:-1]
-            background_left_postive=frame[x1:x2,0:y1]
-            background_left=np.hstack((background_left_negtive,background_left_postive))
+        if y0 < 0:
+            # background_left_negtive = frame[x1:x_mid_up, y0:-1]
+            # background_left_postive = frame[x1:x_mid_up, 0:y1]
+            # background_left = np.hstack((background_left_negtive, background_left_postive))
+            background_left = frame[x1:x3, 0:y1]
         else:
-            background_left=frame[x1:x2,y0:y1]
+            background_left = frame[x1:x3, y0:y1]
         frame_local.append(background_left)
 
         # 右边背景
-        if y4>640:
-            background_right_negetive=frame[x1:x2,0:y4-640]
-            background_right_postive=frame[x1:x2,y3:640]
-            background_right=np.hstack((background_right_negetive,background_right_postive))
+        if y4 > 640:
+            # background_right_negetive = frame[x1:x3, 0:y4 - 640]
+            # background_right_postive = frame[x1:x3, y3:640]
+            # background_right = np.hstack((background_right_negetive, background_right_postive))
+            background_right = frame[x1:x3, y3:640]
         else:
-            background_right=frame[x1:x2,y3:y4]
+            background_right = frame[x1:x3, y3:y4]
 
         frame_local.append(background_right)
 
-
         # 绘图
         cv2.imshow("picture", frame)
-        temp=frame_local[0]
-        if list(frame_local[0]) !=[]:
-            cv2.imshow("face1", frame_local[0])
-            cv2.imshow("face2", frame_local[1])
+        if list(frame_local[0]) != []:
+            try:
+                cv2.imshow("face1", frame_local[-1])
+                cv2.imshow("face2", frame_local[-2])
+            except Exception as e:
+                print("debug")
 
         return frame_local
 
@@ -185,7 +218,7 @@ class rPPG_Extracter():
 
         # 利用关键点分割，返回精准人脸
         frame_cropped = self.get_global_face(frame, key)
-        frame_cropped=[frame_cropped]           # 转成三维列表和local face统一
+        frame_cropped = [frame_cropped]  # 转成三维列表和local face统一
 
         # 用自己规定的区域提取人脸，不过没有用的到
         if len(sub_roi) > 0:
@@ -236,7 +269,8 @@ class rPPG_Extracter():
 
         face_num = len(frame_cropped)
         for i in range(face_num):
-            face_data=frame_cropped[i]
+            face_data = frame_cropped[i]
+            # 三维数组，RGB，每一个是一个一维数组，组合起来是二维数据，多个部位，多个二维数组组合起来是三维数组
             self.rPPG[i].append(self.calc_ppg(num_pixels, face_data))
 
         # fb=open('./rppg.txt','a+')

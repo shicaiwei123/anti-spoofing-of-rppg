@@ -2,7 +2,7 @@ from PyQt5 import QtGui  # (the example applies equally well to PySide)
 from PyQt5 import QtCore  # (the example applies equally well to PySide)
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
-from VideoHealthMonitoring.util.style import style
+from util.style import style
 def getSliderEvent(slider : QSlider):
     return slider.valueChanged
 

@@ -18,24 +18,24 @@ class Settings():
 # source = "C:\\Users\\marti\\Downloads\\Data\\13kmh.mp4" # stationary\\bmp\\"
 # source = "C:\\Users\\marti\\Downloads\\Data\\stationary\\bmp\\"
 source = "webcam"
-fs = 20  # Please change to the capture rate of the footage.    镜头采样率
+fs = 30  # Please change to the capture rate of the footage.    镜头采样率
 
 ############################## APP #######################################################
 
-from VideoHealthMonitoring.util.qt_util import *
-from VideoHealthMonitoring.util.pyqtgraph_util import *
+from util.qt_util import *
+from util.pyqtgraph_util import *
 import numpy as np
-from VideoHealthMonitoring.util.func_util import *
+from util.func_util import *
 import matplotlib.cm as cm
-from VideoHealthMonitoring.util.style import style
-from VideoHealthMonitoring.util.opencv_util import *
-from VideoHealthMonitoring.rPPG_Extracter import *
-from VideoHealthMonitoring.rPPG_lukas_Extracter import *
-from VideoHealthMonitoring.rPPG_processing_realtime import extract_pulse
+from util.style import style
+from util.opencv_util import *
+from rPPG_Extracter import *
+from rPPG_lukas_Extracter import *
+from rPPG_processing_realtime import extract_pulse
 
 ## Creates The App 
 
-fftlength = 300
+fftlength = 100
 
 f = np.linspace(0, fs / 2, int(fftlength / 2 + 1)) * 60
 # f = np.linspace(0, fs / 2, 151) * 60
@@ -88,7 +88,7 @@ def resample_rppg(rppg, timestamps, fs):
     rPPG_len = len(rppg)
     for i in range(rPPG_len):
         rppg_one = rppg[i]
-        if rppg_one !=[]:
+        if rppg_one != []:
             rppg_one = np.transpose(rppg_one)
 
             t = np.arange(0, timestamps[-1], 1 / fs)  # 按照镜头的帧率重采样，间隔不变，上限变大，t会越来越长
@@ -121,25 +121,82 @@ def extract_pulse_local(rppg, fs):
 
     return pulse
 
+
+def cross_enhace(data_list):
+    '''
+    输入二维数组，输出二维数组，求每一行与其他行的互相关增强
+    :param data_list:
+    :return:
+    '''
+    data_len = len(data_list)
+    data_enhance = []
+    # 相关增强
+    for i in range(data_len):
+        j = i + 1
+        while j < data_len:
+            data_enhance.append(data_list[i] * data_list[j])
+            j += 1
+    return data_enhance
+
+
+def data_cross_data(data_list_one, data_list_two):
+    '''
+    输入两个二维数组求互相关，增强
+    :param data_list_one:
+    :param data_list_two:
+    :return:
+    '''
+    len_one = len(data_list_one)
+    len_two = len(data_list_two)
+    data_cross = []
+    for i in range(len_one):
+        for j in range(len_two):
+            data = np.array([data_list_one[i], data_list_two[j]])
+            data_corff = np.corrcoef(data)
+
+            # 只保留相关系数
+            data_cross.append(data_corff[0][1])
+
+    return data_cross
+
+
 def pulse_process(pulse_list):
-    # 相乘
-    face_multil_face=pulse_list[0]*pulse_list[1]
-    face_mutil_ground=pulse_list[0]*pulse_list[2]
-    ground_mutil_ground=pulse_list[1]*pulse_list[2]
+    '''
+    :param pulse_list:
+    :return:
+    '''
+    pulse_len = len(pulse_list)
+    face_pulse = pulse_list[0:pulse_len - 2]
+    ground_pulse = pulse_list[pulse_len - 2:pulse_len]
 
-    #相减
-    face_sub_face=pulse_list[0] - pulse_list[1]
-    face_sub_ground=pulse_list[0] - pulse_list[2]
-    face_distance_face=face_sub_face**2
-    face_distance_ground=face_sub_ground**2
+    # 相关增强
+    face_pulse_enhance = cross_enhace(face_pulse)
+    ground_pulse_enhance = cross_enhace(ground_pulse)
 
-    #相关
-    face_cor_face_data=np.array([pulse_list[0],pulse_list[1]])
-    face_cor_face=np.corrcoef(face_cor_face_data)
-    ground_cor_ground_data=np.array([pulse_list[2],pulse_list[3]])
-    ground_cor_ground=np.array(ground_cor_ground_data)
+    # 相减
+    face_sub_face = pulse_list[0] - pulse_list[1]
+    face_sub_ground = pulse_list[0] - pulse_list[2]
+    face_distance_face = face_sub_face ** 2
+    face_distance_ground = face_sub_ground ** 2
 
-    return [face_multil_face,ground_mutil_ground,face_cor_face,ground_cor_ground]
+    # 相关
+    face_cor_face = data_cross_data([pulse_list[0]], [pulse_list[1]])
+    ground_cor_ground = data_cross_data([pulse_list[-1]], [pulse_list[-2]])
+    face_cor_ground = data_cross_data(face_pulse_enhance, ground_pulse_enhance)
+    print("face_cor_ground", face_cor_ground)
+    for _ in range(3):
+        face_cor_ground.remove(max(face_cor_ground))
+    mean_cor = np.mean(np.array(face_cor_ground))
+    if mean_cor < 0.50:
+        print("true")
+    else:
+        print("false")
+    print("mean_cor", np.mean(np.array(face_cor_ground)))
+    print("face_cor_face", face_cor_face)
+    print("ground_cor_ground", ground_cor_ground)
+
+    return face_pulse_enhance, ground_pulse_enhance
+
 
 def update(load_frame, rPPG_extracter, rPPG_extracter_lukas, settings: Settings):
     '''
@@ -191,10 +248,18 @@ def update(load_frame, rPPG_extracter, rPPG_extracter_lukas, settings: Settings)
     # Extract Pulse
     # 如果列数大于10，也就是录入了至少10张照片
     if rPPG_sample.shape[1] > 10:
+        rppg = []
         if settings.use_resampling:
             rppg = resample_rppg(rPPG_extracter.rPPG, timestamps, fs)
+
         else:
-            rppg = rPPG_extracter.rPPG
+            # 没有重采样也要做转置
+            rppg_len = len(rPPG_extracter.rPPG)
+            for i in range(rppg_len):
+                rppg_one = rPPG_extracter.rPPG[i]
+                if rppg_one != []:
+                    rppg_one = np.transpose(rppg_one)
+                    rppg.append(rppg_one)
 
         pulse = extract_pulse_local(rppg, fs)
         # print(len(f))
@@ -208,19 +273,16 @@ def update(load_frame, rPPG_extracter, rPPG_extracter_lukas, settings: Settings)
         # 从0开始，每一帧的真实时间
         t = np.arange(num_frames) / fs
 
-        multil_process=pulse_process(pulse)
-        plt_bpm.setData(f, multil_process[0])
-        plt_bpm_right.setData(f, multil_process[1])
-        print("face_to_face",multil_process[2])
-        print("ground_to_ground",multil_process[3])
-
+        face_pulse, ground_pulse = pulse_process(pulse)
+        plt_bpm.setData(f, face_pulse[0])
+        plt_bpm_right.setData(f, ground_pulse[0])
 
         plt_r.setData(t[start:num_frames], rppg_one[0, start:num_frames])
         plt_g.setData(t[start:num_frames], rppg_one[1, start:num_frames])
         plt_b.setData(t[start:num_frames], rppg_one[2, start:num_frames])
 
         # 求能量然后取最值
-        bpm = f[np.argmax(multil_process[1])]
+        bpm = f[np.argmax(face_pulse[0])]
         fig_bpm.setTitle('Frequency : PR = ' + str(bpm) + ' BPM')
 
     # # print(fps)

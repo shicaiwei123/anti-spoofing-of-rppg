@@ -5,9 +5,9 @@ import time
 import os
 import matplotlib.pyplot as plt
 import scipy.io as sio
-from VideoHealthMonitoring.util.opencv_util import *
-from VideoHealthMonitoring.rPPG_preprocessing import *
-from VideoHealthMonitoring.csk_facedetection import CSKFaceDetector
+from util.opencv_util import *
+from rPPG_preprocessing import *
+from csk_facedetection import CSKFaceDetector
 import math
 class rPPG_Extracter():
     def __init__(self):

@@ -5,10 +5,10 @@ import time
 import os
 import matplotlib.pyplot as plt
 import scipy.io as sio
-from VideoHealthMonitoring.util.opencv_util import *
-from VideoHealthMonitoring.rPPG_Extracter import *
+from util.opencv_util import *
+from rPPG_Extracter import *
 import csv
-from VideoHealthMonitoring.rPPG_lukas_Extracter import *
+from rPPG_lukas_Extracter import *
 
 matname = "mixed_motion"
 data_path = "C:\\Users\\marti\\Downloads\\Data\\mixed_motion"
