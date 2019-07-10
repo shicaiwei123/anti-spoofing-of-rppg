@@ -110,14 +110,14 @@ class rPPG_Extracter():
         y_len = len(y_list)
         local_face_list = []
         for i in range(x_len - 1):
-            if i <x_len-2:
+            if i < x_len - 2:
                 for j in range(y_len - 1):
                     local_face = frame[x_list[i]:x_list[i + 1], y_list[j]:y_list[j + 1]]
                     local_face_list.append(local_face)
 
             # 对最后一行单独处理
             else:
-                for j in range(1,y_len-2):
+                for j in range(1, y_len - 2):
                     local_face = frame[x_list[i]:x_list[i + 1], y_list[j]:y_list[j + 1]]
                     local_face_list.append(local_face)
         return local_face_list
@@ -211,7 +211,7 @@ class rPPG_Extracter():
 
         # 人脸检测,返回人脸，灰色人脸，上次人脸
 
-        frame_cropped, gray_frame, self.prev_face = crop_to_face(frame, gray, self.prev_face)
+        frame_cropped, gray_frame, self.prev_face, flag = crop_to_face(frame, gray, self.prev_face)
 
         # 求关键点
         key = self.get_landmarks(gray, self.prev_face)
@@ -230,7 +230,7 @@ class rPPG_Extracter():
 
         num_pixels = frame.shape[0] * frame.shape[1]
 
-        return frame_cropped, num_pixels
+        return frame_cropped, num_pixels, flag
 
     def process_frame_local(self, frame, sub_roi):
 
@@ -244,7 +244,7 @@ class rPPG_Extracter():
 
         # 人脸检测,返回人脸，灰色人脸，上次人脸
 
-        frame_cropped, gray_frame, self.prev_face = crop_to_face(frame, gray, self.prev_face)
+        frame_cropped, gray_frame, self.prev_face,flag = crop_to_face(frame, gray, self.prev_face)
 
         # 求关键点
         key = self.get_landmarks(gray, self.prev_face)
@@ -254,7 +254,7 @@ class rPPG_Extracter():
 
         num_pixels = frame.shape[0] * frame.shape[1]
 
-        return frame_cropped, num_pixels
+        return frame_cropped, num_pixels, flag
 
     def measure_rPPG(self, frame, use_classifier=False, sub_roi=[]):
         '''
@@ -265,7 +265,7 @@ class rPPG_Extracter():
         :return:
         '''
         # frame_cropped, num_pixels = self.process_frame_global(frame, sub_roi)
-        frame_cropped, num_pixels = self.process_frame_local(frame, sub_roi)
+        frame_cropped, num_pixels, flag = self.process_frame_local(frame, sub_roi)
 
         face_num = len(frame_cropped)
         for i in range(face_num):

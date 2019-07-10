@@ -35,11 +35,12 @@ from rPPG_processing_realtime import extract_pulse
 
 ## Creates The App 
 
-fftlength = 100
+fftlength = 160
 
 f = np.linspace(0, fs / 2, int(fftlength / 2 + 1)) * 60
 # f = np.linspace(0, fs / 2, 151) * 60
 settings = Settings()
+no_face_frme = 0
 
 
 def create_video_player():
@@ -118,6 +119,10 @@ def extract_pulse_local(rppg, fs):
         rppg_one = rppg[i]
         pulse_one = extract_pulse(rppg_one, fftlength, fs)
         pulse.append(pulse_one)
+        if pulse[0][0] != 0:
+            end = datetime.datetime.now()
+            time_sub = end - begin
+            print("time", time_sub.total_seconds())
 
     return pulse
 
@@ -272,7 +277,7 @@ def update(load_frame, rPPG_extracter, rPPG_extracter_lukas, settings: Settings)
 
         # 从0开始，每一帧的真实时间
         t = np.arange(num_frames) / fs
-
+        # a,b=pulse_process(rppg)
         face_pulse, ground_pulse = pulse_process(pulse)
         plt_bpm.setData(f, face_pulse[0])
         plt_bpm_right.setData(f, ground_pulse[0])
@@ -387,12 +392,12 @@ def setup_video(data_path, timer, settings):
 
 
 # settings = Settings()
-
 # 根据全局变量，控制不同的分支
 # 真正的main
 if source.endswith('.mp4'):
     setup_video(source, timer, settings)
 elif source == 'webcam':
+    begin = datetime.datetime.now()
     setup_webcam(timer, settings)
 else:
     setup_loaded_image_sequence(source, timer, settings)

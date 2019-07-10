@@ -11,6 +11,7 @@ lower = np.array([0, 48, 80], dtype="uint8")
 upper = np.array([20, 255, 255], dtype="uint8")
 
 
+
 def apply_skin_classifier(frame):
     converted = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     skinMask = cv2.inRange(converted, lower, upper)
@@ -48,13 +49,13 @@ def crop_to_face(frame, gray, prev_face):
     # print(prev_face)
     if len(faces) == 0:
         if prev_face[0] == 0:
-            return frame, gray, prev_face
+            return frame, gray, prev_face,False
         else:
-            return crop_frame(frame, prev_face), crop_frame(gray, prev_face), prev_face
+            return crop_frame(frame, prev_face), crop_frame(gray, prev_face), prev_face,True
     else:
         if prev_face[0] == 0:
             face_rect = faces[0]
-            return crop_frame(frame, faces[0]), crop_frame(gray, faces[0]), faces[0]
+            return crop_frame(frame, faces[0]), crop_frame(gray, faces[0]), faces[0],True
         else:
             face_rect = faces[0]
 
@@ -63,6 +64,6 @@ def crop_to_face(frame, gray, prev_face):
             if delta > 20:
                 face_rect[2] = prev_face[2]
                 face_rect[3] = prev_face[3]
-                return crop_frame(frame, face_rect), crop_frame(gray, face_rect), face_rect
+                return crop_frame(frame, face_rect), crop_frame(gray, face_rect), face_rect,True
             else:
-                return crop_frame(frame, prev_face), crop_frame(gray, prev_face), prev_face
+                return crop_frame(frame, prev_face), crop_frame(gray, prev_face), prev_face,True
