@@ -19,7 +19,7 @@ def extract_pulse(rPPG, fftlength, fs_video):
     fft_roi = range(int(fftlength / 2 + 1))  # We only care about this part of the fft because it is symmetric anyway
     # fft_roi=range(151)
     bpf_div = 60 * fs_video / 2
-    b_BPF40220, a_BPF40220 = signal.butter(10, ([40 / bpf_div, 220 / bpf_div]), 'bandpass')
+    b_BPF40220, a_BPF40220 = signal.butter(10, ([40 / bpf_div, 200 / bpf_div]), 'bandpass')
 
     col_c = np.zeros((3, fftlength))
     skin_vec = [1,0.66667,0.5]

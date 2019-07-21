@@ -30,7 +30,6 @@ import matplotlib.cm as cm
 from util.style import style
 from util.opencv_util import *
 from rPPG_Extracter import *
-from rPPG_lukas_Extracter import *
 from rPPG_processing_realtime import extract_pulse
 
 ## Creates The App 
@@ -41,6 +40,7 @@ f = np.linspace(0, fs / 2, int(fftlength / 2 + 1)) * 60
 # f = np.linspace(0, fs / 2, 151) * 60
 settings = Settings()
 no_face_frme = 0
+mean_counter = 1
 
 
 def create_video_player():
@@ -122,7 +122,7 @@ def extract_pulse_local(rppg, fs):
         if pulse[0][0] != 0:
             end = datetime.datetime.now()
             time_sub = end - begin
-            print("time", time_sub.total_seconds())
+            # print("time", time_sub.total_seconds())
 
     return pulse
 
@@ -192,18 +192,18 @@ def pulse_process(pulse_list):
     for _ in range(3):
         face_cor_ground.remove(max(face_cor_ground))
     mean_cor = np.mean(np.array(face_cor_ground))
-    if mean_cor < 0.50:
-        print("true")
-    else:
-        print("false")
+    # if mean_cor < 0.50:
+    #     print("true")
+    # else:
+    #     print("false")
     print("mean_cor", np.mean(np.array(face_cor_ground)))
     print("face_cor_face", face_cor_face)
     print("ground_cor_ground", ground_cor_ground)
 
-    return face_pulse_enhance, ground_pulse_enhance
+    return face_pulse_enhance, ground_pulse_enhance, mean_cor
 
 
-def update(load_frame, rPPG_extracter, rPPG_extracter_lukas, settings: Settings):
+def update(load_frame, rPPG_extracter, settings: Settings):
     '''
     循环主体
     :param load_frame: 帧读取句柄，
@@ -213,6 +213,7 @@ def update(load_frame, rPPG_extracter, rPPG_extracter_lukas, settings: Settings)
     :return:
     '''
     bpm = 0
+    global mean_counter
     frame, should_stop, timestamp = load_frame()  # frame_from_camera()
 
     # 保存刷新时间，然后求帧率显示而已
@@ -231,24 +232,13 @@ def update(load_frame, rPPG_extracter, rPPG_extracter_lukas, settings: Settings)
     if should_stop:
         return
 
-    # 求rppg,两类方法，目前用的是第二个
-    rPPG_sample = []
-    if settings.use_flow:
-        rPPG_extracter = rPPG_extracter_lukas
-        rPPG_extracter.crop_to_face_and_safe(frame)
-        rPPG_extracter.track_Local_motion_lukas()
-        rPPG_extracter.calc_ppg(frame)
-        points = rPPG_extracter.points
-        frame = cv2.circle(frame, (points[0, 0, 0], points[0, 0, 1]), 5, (0, 0, 255), -1)
+    # 求rppg
+    # 获取到目前的所有图片的ppg值，并且转置，一开始是nx3，转置变成3xn
+    rPPG_extracter.measure_rPPG(frame, settings.use_classifier, settings.sub_roi)
 
-        rPPG_sample = np.transpose(rPPG_extracter_lukas.rPPG_sample)
-    else:
-        # 获取到目前的所有图片的ppg值，并且转置，一开始是nx3，转置变成3xn
-        rPPG_extracter.measure_rPPG(frame, settings.use_classifier, settings.sub_roi)
-
-        #  提取分量，再做变换
-        rPPG_sample = rPPG_extracter.rPPG[0]
-        rPPG_sample = np.transpose(rPPG_sample)
+    #  提取分量，再做变换
+    rPPG_sample = rPPG_extracter.rPPG[0]
+    rPPG_sample = np.transpose(rPPG_sample)
 
     # Extract Pulse
     # 如果列数大于10，也就是录入了至少10张照片
@@ -278,7 +268,15 @@ def update(load_frame, rPPG_extracter, rPPG_extracter_lukas, settings: Settings)
         # 从0开始，每一帧的真实时间
         t = np.arange(num_frames) / fs
         # a,b=pulse_process(rppg)
-        face_pulse, ground_pulse = pulse_process(pulse)
+        face_pulse, ground_pulse, mean_cor = pulse_process(pulse)
+        if mean_cor < 0.5:
+            print("true")
+        else:
+            mean_counter += 1
+        if mean_counter >= 4:
+            print("false")
+            mean_counter = 1
+
         plt_bpm.setData(f, face_pulse[0])
         plt_bpm_right.setData(f, ground_pulse[0])
 
@@ -288,6 +286,11 @@ def update(load_frame, rPPG_extracter, rPPG_extracter_lukas, settings: Settings)
 
         # 求能量然后取最值
         bpm = f[np.argmax(face_pulse[0])]
+
+        # max_num=[]
+        # for i in range(len(face_pulse)):
+        #     max_num.append(f[np.argmax(face_pulse[i])])
+        # print("max_num",max_num)
         fig_bpm.setTitle('Frequency : PR = ' + str(bpm) + ' BPM')
 
     # # print(fps)
@@ -335,8 +338,7 @@ def setup_update_loop(load_frame, timer, settings):
     except Exception:
         pass
     rPPG_extracter = rPPG_Extracter()
-    rPPG_extracter_lukas = rPPG_Lukas_Extracter()
-    update_fun = lambda: update(load_frame, rPPG_extracter, rPPG_extracter_lukas, settings)
+    update_fun = lambda: update(load_frame, rPPG_extracter, settings)
 
     # 计时结束时，就调用这个函数，计时器内部自由这个计时逻辑
     timer.timeout.connect(update_fun)

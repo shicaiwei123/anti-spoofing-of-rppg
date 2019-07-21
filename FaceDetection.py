@@ -26,108 +26,180 @@ class c_face_detection():
         """
         构造函数，初始化参数
         """
-        self.picture = None
-        self.a_face_picture = None
+        self.picture = None  # 缓存有人脸的照片
+        self.a_face_picture = None  # 缓存人脸区域内容
+        self.a_face_rect = None  # 缓存 人脸区域坐标
+        self.a_landmark = None  # 缓存特征点
         self.a_face_profile = None
         PREDICTOR_PATH = "shape_predictor_68_face_landmarks.dat"
         self.a_detector = dlib.get_frontal_face_detector()
         self.a_predictor = dlib.shape_predictor(PREDICTOR_PATH)
         self.a_face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+        self.face_detection_number = 0
 
-    def face_detection(self):
-        """
-        检测人脸，返回拍摄有人脸的图片
+    def face_detection(self, img, display='false'):
+        '''
+        输入一张RGB照片，利用opencv的人脸检测器，粗略检测人脸，并且返回人脸图像和人脸位置
         :return:
-        """
-        cap = cv2.VideoCapture(0)
+        '''
 
-        def face_detect():
-            while 1:
-                face_detection_number = 0
-                # get a frame
-                ret, frame = cap.read()
-                img = frame
-                begin = datetime.datetime.now()
-                img_key = img.copy()
-                detector = self.a_detector
-                predictor = self.a_predictor
+        # 预处理
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-                # 预处理
-                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # 人脸提取
+        face_cascade = self.a_face_cascade
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(5, 5))
 
-                # 人脸检测
-                rects = detector(gray, 1)
-
-                # 显示
-                cv2.imshow("face", gray)
-                if len(rects) == 0:
-                    face_detection_number = 0
-                else:
-                    face_detection_number += 1
-
-        while (1):
-
-            # get a frame
-            ret, frame = cap.read()
-            img = frame
-            begin = datetime.datetime.now()
-            img_key = img.copy()
-            detector = self.a_detector
-            predictor = self.a_predictor
-
-            # 预处理
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-            # 人脸检测
-            rects = detector(gray, 1)
-
-            # 显示
-            cv2.imshow("face", gray)
-            if len(rects) == 0:
-                face_detection_number = 0
+        # 显示
+        if display == 'true':
+            if len(faces) == 0:
+                return faces
             else:
-                face_detection_number += 1
+                face = faces[0]
+                left = face[0]
+                top = face[1]
+                right = left + face[2]
+                bottom = top + face[2]
+                face_roi = img[top:bottom, left:right]
+                cv2.rectangle(img, (left, top), (right, bottom), (0, 255, 0), 3)
+                cv2.imshow("face_roi", img)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    print("face_roi display")
 
-            # 连续10帧人脸就认为是检测到了
-            if face_detection_number > 10:
-                break
-            cv2.waitKey(0)
+        return faces
+
+    def landmark_detection(self, img_rgb, face_rect, display='false'):
+        '''
+        输入包含人脸的RGB照片和人脸区域坐标（opencv），返回特征点
+        关键点以坐标的list的方式返回
+        display: 是否要显示特诊点
+        :return:
+        '''
+
+        faces = face_rect
+        # 类型转变，opencv_to_dlib
+        coordinate = faces
+        x1 = coordinate[0]
+        y1 = coordinate[1]
+        x2 = x1 + coordinate[2]
+        y2 = y1 + coordinate[3]
+        rect = dlib.rectangle(x1, y1, x2, y2)
+
+        img_key = img_rgb.copy()
+        predictor = self.a_predictor
+        gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         points_keys = []
+
         # 特征点检测,只取第一个,也就是最大的一个
-        landmarks = np.matrix([[p.x, p.y] for p in predictor(gray, rects[0]).parts()])
+        landmarks = np.matrix([[p.x, p.y] for p in predictor(gray, rect).parts()])
 
         # 特征点提取,标注
         for idx, point in enumerate(landmarks):
-            # pos = (point[0,0],point[0,1])
+            pos = (point[0, 0], point[0, 1])
             points_keys.append([point[0, 0], point[0, 1]])
-            # cv2.circle(img_key,pos,2,(255,0,0),-1)
+            cv2.circle(img_key, pos, 2, (255, 0, 0), -1)
 
-        # 求端点,分割处人脸
-        key = points_keys
+        if display == 'true':
+            cv2.imshow("landmark", img_key)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                print("landmark display")
+        return points_keys
+
+    def face_select(self, img_rgb, lamdmarks, display='false'):
+        '''
+        输入包含人脸的图像和特征点，根据需要选择自己需要的区域，返回
+        该函数会根据不同的需要，往往会进行重构
+        :param img_rgb:
+        :param lamdmarks:
+        :return:
+        '''
+
+        key = lamdmarks
         left = key[3][0]  # 第一个特征点的纵坐标,也就是宽的方向
         right = key[13][0]  # 第17个特征点的纵坐标,也就是宽方形
         top = key[20][1] - 10  # 第21个点的横坐标,也即是高的起始
         bottom = key[8][1] - 20  # 第9个点的横坐标
-        img_roi = img[top:bottom, left:right]
+        img_roi = img_rgb[top:bottom, left:right]
 
-        end = datetime.datetime.now()
-        time_sub = end - begin
-        # print("人脸截取时间:",time_sub.total_seconds())
+        # 显示
+        if display == 'true':
+            cv2.rectangle(img_rgb, (left, top), (right, bottom), (0, 255, 0), 1)
+            cv2.imshow("face_roi", img_rgb)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                print("face_roi display")
+
         return img_roi
-        # release camera
-        cap.release()
-        cv2.destroyAllWindows()
 
-    def face_detetion_picture(self, p_img, model='process'):
+    def color_judge(self, img_rgb):
+        '''
+        判断图像是不是彩色图片，不死返回False，是返回True
+        原理是灰度图片的三通道相差不大
+        :return:
+        '''
+        img = img_rgb
+        R = np.float32(img[:, :, 0])
+        B = np.float32(img[:, :, 1])
+        G = np.float32(img[:, :, 2])
+        RG = np.abs(R - G)
+        RB = np.abs(R - B)
 
+        zero_mask = RG == 0
+        RG_zero = RG[zero_mask]
+        RG_zero_num = RG_zero.size
+
+        zero_mask = RB == 0
+        RB_zero = RB[zero_mask]
+        RB_zero_num = RB_zero.size
+
+        # 超过阈值则表明是黑白照片，直接判为欺骗
+        if RB_zero_num > 30000 and RG_zero_num > 30000:
+            print("灰色图像")
+            return False
+
+        return True
+
+    def face_detection_video(self, cap):
+        """
+        从摄像机中实时拍摄，检测人脸，返回拍摄有人脸的图片
+        :return:
+        """
+        cap = cap
+
+        while (1):
+            # get a frame
+            ret, frame = cap.read()
+            img = cv2.resize(frame, (640, 480))
+
+            # 黑白和彩印区别
+            color_result = self.color_judge(img)
+
+            # 人脸识别
+            face_rect = self.face_detection(img, display='false')
+            if len(face_rect) == 0:
+                continue
+            else:
+                face_rect = face_rect[0]
+
+            # 特征点提取
+            landmarks = self.landmark_detection(frame, face_rect, display='false')
+
+            # 人脸选择
+            img_roi = self.face_select(frame, landmarks, display='false')
+
+            return img_roi
+            # release camera
+            cap.release()
+            cv2.destroyAllWindows()
+
+    def face_detection_picture(self, p_img, model='process'):
+        '''
+        从照片中检测人脸，并且根据颜色分布和大小来排除一些欺骗照片、
+        '''
         # 全景图片人脸检测
         # 初始化
         begin = datetime.datetime.now()
-        img = p_img
-        points_keys = []
-        img_key = img.copy()
-        detector = self.a_detector
-        predictor = self.a_predictor
+        img = cv2.resize(p_img, (640, 480))
+
 
         # 预处理和实际使用的时候,这个边界条件设置的不一样,是为了更好的限制输入
         # 同时也为了预处理的时候不至于丢掉太多图片
@@ -135,29 +207,22 @@ class c_face_detection():
             threshold = 130
         elif model == 'test':
             threshold = 120
+
         else:
             threshold = 70
 
-        # 预处理
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-        # 人脸检测
-        rects = detector(gray, 1)
-        if len(rects) == 0:
-            # cv2.imshow("none", gray)
-            # cv2.waitKey(0)
+        #  人脸识别
+        face_rect = self.face_detection(img, display='false')
+        if len(face_rect) == 0:
             return None
-        # 特征点检测,只取第一个,也就是最大的一个
-        landmarks = np.mat([[p.x, p.y] for p in predictor(gray, rects[0]).parts()])
+        else:
+            face_rect = face_rect[0]
 
-        # 特征点提取,标注
-        for idx, point in enumerate(landmarks):
-            # pos = (point[0,0],point[0,1])
-            points_keys.append([point[0, 0], point[0, 1]])
-            # cv2.circle(img_key,pos,2,(255,0,0),-1)
+        # 特征点提取
+        landmarks = self.landmark_detection(img, face_rect, display='false')
 
         # 求端点,分割处人脸
-        key = points_keys
+        key = landmarks
         left = key[3][0]  # 第一个特征点的纵坐标,也就是宽的方向
         right = key[13][0]  # 第17个特征点的纵坐标,也就是宽方形
         distance = key[27][1] - key[21][1]  # 使用相对间距而不是绝对间距来删选
@@ -165,15 +230,13 @@ class c_face_detection():
         bottom = int((key[7][1] + key[9][1]) / 2)  # 第8个点的横坐标
         img_roi = img[top:bottom, left:right]
 
-        # print(bottom - top, right - left)
-
-        # 删除过于小尺寸的,有一个边小于70,就删除
+        # # 删除过于小尺寸的,有一个边小于70,就删除
         if bottom - top < threshold or right - left < threshold:
             return None
-
-        # 删除过大的
-        if bottom - top > 330 or right - left > 280:
-            return None
+        #
+        # # 删除过大的
+        # if bottom - top > 330 or right - left > 280:
+        #     return None
 
         end = datetime.datetime.now()
         time_sub = end - begin
@@ -185,63 +248,10 @@ class c_face_detection():
 
         return img_roi
 
-    def face_profile(self, p_img=None):
-        if p_img is None:
-            img = self.a_face_picture
-        else:
-            img = p_img
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)  # 把图像转换到HSV色域
-        (_h, _s, _v) = cv2.split(hsv)  # 图像分割, 分别获取h, s, v 通道分量图像
-        skin3 = np.zeros(_h.shape, dtype=np.uint8)  # 根据源图像的大小创建一个全0的矩阵,用于保存图像数据
-        (x, y) = _h.shape  # 获取源图像数据的长和宽
-
-        # 遍历图像, 判断HSV通道的数值, 如果在指定范围中, 则置把新图像的点设为255,否则设为0
-        begin = datetime.datetime.now()
-        # for i in range(0, x):
-        #     for j in range(0, y):
-        #         if (_h[i][j] > 7) and (_h[i][j] < 20) and (_s[i][j] > 28) and (_s[i][j] < 255) and (_v[i][j] > 50) and (
-        #                 _v[i][j] < 255):
-        #             skin3[i][j] = 255
-        #         else:
-        #             skin3[i][j] = 0
-
-        # _h[_h>7]
-
-        end = datetime.datetime.now()
-        sub = end - begin
-        element1 = cv2.getStructuringElement(cv2.MORPH_RECT, (6, 6))
-
-        # 5. 腐蚀一次，去掉细节，如表格线等。注意这里去掉的是竖直的线
-        erosion = cv2.erode(skin3, element1, iterations=1)
-        c = erosion[100, :]
-        begin = datetime.datetime.now()
-        for i in range(x):
-            if 255 in erosion[i, :]:
-                high = i
-            if 255 in erosion[x - i - 1, :]:
-                low = 254 - i
-
-            if 255 in erosion[:, i]:
-                left = i
-            if 255 in erosion[:, x - i - 1]:
-                right = 254 - i
-        end = datetime.datetime.now()
-        sub = end - begin
-        face_img = img[low:high, right:left]
-        self.a_face_profile = face_img
-        return face_img
-        # rege_img=cv2.rectangle(img, (right,low), (left,high), (0, 255, 0), 2)  # 用矩形圈出人脸
-        # cv2.imshow("imname", img)
-        # cv2.imshow("bbb", face_img)
-        # cv2.imshow("aa", erosion)
-        # cv2.imshow(" Skin3 HSV", skin3)
-        # cv2.waitKey(0)
-
     def get_face_picture(self):
         return self.a_face_picture
 
     def face_alignment(self, picture):
-
         # 初始化
         behin = datetime.datetime.now()
         predictor = self.a_predictor
@@ -313,12 +323,14 @@ class c_face_detection():
 
 if __name__ == '__main__':
     # 人脸检测
+    cap = cv2.VideoCapture(0)
+    # 人脸检测
+    o_face_detection = c_face_detection()
     while 1:
-        o_face_detection = c_face_detection()
-        o_face_detection.face_detection()
-        face_picture = o_face_detection.get_face_picture()
-        size = (64, 64)
-        # picture_resize = cv2.resize(face_picture, size)
-        picture_resize = face_picture
-        # cv2.imshow("resize", picture_resize)
-        # cv2.waitKey(0)
+        # ret, frame = cap.read()
+        # img = frame
+
+        # 预处理
+        # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        o_face_detection.face_detection_video(cap)
+        # face_picture = o_face_detection.face_detetion_picture(img)

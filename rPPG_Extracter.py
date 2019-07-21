@@ -25,6 +25,7 @@ class rPPG_Extracter():
         PREDICTOR_PATH = "shape_predictor_68_face_landmarks.dat"
         self.a_detector = dlib.get_frontal_face_detector()
         self.a_predictor = dlib.shape_predictor(PREDICTOR_PATH)
+        self.a_face_detection = c_face_detection()
 
     def calc_ppg(self, num_pixels, frame):
         '''
@@ -168,9 +169,6 @@ class rPPG_Extracter():
         y3 = y3 + distance * 2
 
         if y0 < 0:
-            # background_left_negtive = frame[x1:x_mid_up, y0:-1]
-            # background_left_postive = frame[x1:x_mid_up, 0:y1]
-            # background_left = np.hstack((background_left_negtive, background_left_postive))
             background_left = frame[x1:x3, 0:y1]
         else:
             background_left = frame[x1:x3, y0:y1]
@@ -178,9 +176,6 @@ class rPPG_Extracter():
 
         # 右边背景
         if y4 > 640:
-            # background_right_negetive = frame[x1:x3, 0:y4 - 640]
-            # background_right_postive = frame[x1:x3, y3:640]
-            # background_right = np.hstack((background_right_negetive, background_right_postive))
             background_right = frame[x1:x3, y3:640]
         else:
             background_right = frame[x1:x3, y3:y4]
@@ -214,7 +209,7 @@ class rPPG_Extracter():
         frame_cropped, gray_frame, self.prev_face, flag = crop_to_face(frame, gray, self.prev_face)
 
         # 求关键点
-        key = self.get_landmarks(gray, self.prev_face)
+        key = self.a_face_detection.landmark_detection(frame_cropped, self.prev_face)
 
         # 利用关键点分割，返回精准人脸
         frame_cropped = self.get_global_face(frame, key)
@@ -236,7 +231,7 @@ class rPPG_Extracter():
 
         '''
         处理视频帧，提取人脸的多个局部部分
-        :param frame: 视频帧，但是还可能是空为什么？？？
+        :param frame: 视频帧
         :param sub_roi:
         :return:
         '''
@@ -244,7 +239,7 @@ class rPPG_Extracter():
 
         # 人脸检测,返回人脸，灰色人脸，上次人脸
 
-        frame_cropped, gray_frame, self.prev_face,flag = crop_to_face(frame, gray, self.prev_face)
+        frame_cropped, gray_frame, self.prev_face, flag = crop_to_face(frame, gray, self.prev_face)
 
         # 求关键点
         key = self.get_landmarks(gray, self.prev_face)
