@@ -22,7 +22,6 @@ the implement of 3D Mask Face Anti-spoofing with Remote Photoplethysmography
 - Run
     - Check if your camera is working by cheese
     - Configure config.py
-    - Check if requirements.txt is satisfied
     - run rPPG_GUI.py
     
 - 项目介绍
@@ -44,7 +43,6 @@ the implement of 3D Mask Face Anti-spoofing with Remote Photoplethysmography
 - 运行
     - 利用chees命令,检查摄像头是否工作
     - 配置config.py ,已经配置好了
-    - 检测是否满足requirements.txt
     - 运行 rPPG_GUI.py
 
 - run rPPG_GUI.py
