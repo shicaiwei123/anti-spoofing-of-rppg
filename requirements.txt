@@ -48,7 +48,7 @@ gunicorn==19.9.0
 gym==0.15.3
 h5py==2.10.0
 html5lib==0.9999999
-httplib2==0.14.0
+httplib2==0.18.0
 idna==2.8
 imageio==2.6.1
 imageio-ffmpeg==0.3.0
