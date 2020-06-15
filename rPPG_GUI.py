@@ -1,43 +1,22 @@
-# Author : Martin van Leeuwen
-# Video pulse rate monitor using rPPG with the chrominance method.
-# python动态绘图
-############################## User Settings #############################################
 
-class Settings():
-    def __init__(self):
-        self.use_classifier = True  # Toggles skin classifier
-        self.use_flow = False  # (Mixed_motion only) Toggles PPG detection
-        # with Lukas Kanade optical flow
-        self.show_cropped = True  # Shows the processed frame on the aplication instead of the regular one.
-        self.sub_roi = []  # [.35,.65,.05,.15] # If instead of skin classifier, forhead estimation should be used
-        # set to [.35,.65,.05,.15]
-        self.use_resampling = True  # Set to true with webcam 
+from config import Settings
+from config import args
 
-
-# In the source either put the data path to the image sequence/video or "webcam"
-# source = "C:\\Users\\marti\\Downloads\\Data\\13kmh.mp4" # stationary\\bmp\\"
-# source = "C:\\Users\\marti\\Downloads\\Data\\stationary\\bmp\\"
-source = "webcam"
-fs = 30  # Please change to the capture rate of the footage.    镜头采样率
+source = args.source
+fs =args.fs
 
 ############################## APP #######################################################
 
 from util.qt_util import *
 from util.pyqtgraph_util import *
-import numpy as np
-from util.func_util import *
-import matplotlib.cm as cm
-from util.style import style
-from util.opencv_util import *
 from rPPG_Extracter import *
 from rPPG_processing_realtime import extract_pulse
 
 ## Creates The App 
 
-fftlength = 160
+fftlength = args.fftlength
 
 f = np.linspace(0, fs / 2, int(fftlength / 2 + 1)) * 60
-# f = np.linspace(0, fs / 2, 151) * 60
 settings = Settings()
 no_face_frme = 0
 mean_counter = 1
@@ -106,7 +85,8 @@ def resample_rppg(rppg, timestamps, fs):
 def extract_pulse_local(rppg, fs):
     '''
     输入所有的face的rppg信号,初始采样时间戳，摄像头采样率，然后输出重采样之后的rppg以及获取的pulse信号
-    :param rppg:三维list
+    :param rppg:rppg data from rPPG_Extracter.py
+    : fs sampling rate
     :return:
     '''
 
@@ -145,8 +125,9 @@ def cross_enhace(data_list):
 
 
 def data_cross_data(data_list_one, data_list_two):
+
     '''
-    输入两个二维数组求互相关，增强
+    输入两个二维数组求互相关，增强  /mutual correlation
     :param data_list_one:
     :param data_list_two:
     :return:
@@ -166,6 +147,11 @@ def data_cross_data(data_list_one, data_list_two):
 
 
 def pulse_process(pulse_list):
+    '''
+    对获取的pluse信号做处理,判断是否是欺骗  /Process the acquired pluse signal to determine whether it is spoofing attacks
+    :param pulse_list:
+    :return:
+    '''
     '''
     :param pulse_list:
     :return:
@@ -233,15 +219,15 @@ def update(load_frame, rPPG_extracter, settings: Settings):
         return
 
     # 求rppg
-    # 获取到目前的所有图片的ppg值，并且转置，一开始是nx3，转置变成3xn
-    rPPG_extracter.measure_rPPG(frame, settings.use_classifier, settings.sub_roi)
+    # 获取到目前的所有图片的ppg值，并且转置，一开始是nx3，转置变成3xn   /Get the ppg values of all the  pictures, and transpose, at first it is nx3, the transpose becomes 3xn
+    rPPG_extracter.measure_rPPG(frame)
 
-    #  提取分量，再做变换
+    #  提取分量，再做变换   / Extract the components and transform
     rPPG_sample = rPPG_extracter.rPPG[0]
     rPPG_sample = np.transpose(rPPG_sample)
 
     # Extract Pulse
-    # 如果列数大于10，也就是录入了至少10张照片
+
     if rPPG_sample.shape[1] > 10:
         rppg = []
         if settings.use_resampling:
@@ -293,32 +279,8 @@ def update(load_frame, rPPG_extracter, settings: Settings):
         # print("max_num",max_num)
         fig_bpm.setTitle('Frequency : PR = ' + str(bpm) + ' BPM')
 
-    # # print(fps)
-    # face = rPPG_extracter.prev_face
-    # if not settings.use_flow:
-    #     if settings.show_cropped:
-    #         frame = rPPG_extracter.frame_cropped
-    #         if len(settings.sub_roi) > 0:
-    #             sr = rPPG_extracter.sub_roi_rect
-    #             draw_rect(frame, sr)
-    #     else:
-    #         try:
-    #             draw_rect(frame, face)
-    #             if len(settings.sub_roi) > 0:
-    #                 sr = rPPG_extracter.sub_roi_rect
-    #                 sr[0] += face[0]
-    #                 sr[1] += face[1]
-    #                 draw_rect(frame, sr)
-    #         except Exception:
-    #             print("no face")
-    # #    write_text(frame,"bpm : " + '{0:.2f}'.format(bpm),(0,100))
-    # write_text(frame, "fps : " + '{0:.2f}'.format(fps), (0, 50))
-    # frame, _ = pg.makeARGB(frame, None, None, None, False)
-    # # cv2.imshow("images", np.hstack([frame]))
-    # img.setImage(frame)
 
-
-# 初始化计时器，计时单位ms
+# 初始化计时器，计时单位ms /Initialize timer, time unit ms
 # 单纯缩小计时时长没用，因为相机的帧率本身是有限制的，提高刷新时间，但是还是同一张图片的话没有意义。
 timer = QtCore.QTimer()
 timer.start(10)
@@ -406,5 +368,4 @@ else:
 
 w.setLayout(layout)
 execute_app(app, w)
-camera.release()
 cv2.destroyAllWindows()

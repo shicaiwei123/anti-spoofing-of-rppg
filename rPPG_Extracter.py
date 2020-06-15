@@ -1,11 +1,4 @@
-import numpy as np
-import argparse
-import cv2
-import time
-import os
-import matplotlib.pyplot as plt
-import scipy.io as sio
-from util.opencv_util import *
+
 from rPPG_preprocessing import *
 from FaceDetection import c_face_detection
 import math
@@ -17,9 +10,9 @@ import datetime
 
 class rPPG_Extracter():
     def __init__(self):
-        self.prev_face = [0, 0, 0, 0]  # 脸部脚点,随机赋值
+        self.prev_face = [0, 0, 0, 0]
         self.skin_prev = []
-        self.rPPG = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
+        self.rPPG = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]  #
         self.rPPG_right = []
         self.sub_roi_rect = []
         PREDICTOR_PATH = "shape_predictor_68_face_landmarks.dat"
@@ -29,7 +22,7 @@ class rPPG_Extracter():
 
     def calc_ppg(self, num_pixels, frame):
         '''
-        # 求不同颜色分量的均值。并保存，返回
+        # 求不同颜色分量的均值。并保存，返回   /Find the average of different color components and return
         :param num_pixels:  读取的图片的像素点，而不是感兴趣的区域的像素的。
         :param frame:  人脸图像
         :return:
@@ -53,7 +46,7 @@ class rPPG_Extracter():
     def get_landmarks(self, gray, face_rect):
 
         '''
-        求关键点
+        求关键点 / get key points
         :param gray:图像灰度图
         :param face_rect:opencv 人脸识别结果
         :return:
@@ -84,7 +77,7 @@ class rPPG_Extracter():
 
     def get_global_face(self, frame, key):
         '''
-        利用关键点，获取整张人脸图片
+        利用关键点，获取整张人脸图片   / Use key points to get the entire face picture
         :param frame:
         :param gray:
         :param key:
@@ -125,7 +118,7 @@ class rPPG_Extracter():
 
     def get_local_face(self, frame, key):
         '''
-        获取脸局部信息，鼻子以下，两个部位，或者多个部位
+        将人脸分成多个局部，鼻子以下，两个部位，或者多个部位  /Divide the face into multiple parts,
         :param frame:
         :param key:
         :return:
@@ -193,11 +186,11 @@ class rPPG_Extracter():
 
         return frame_local
 
-    def process_frame_global(self, frame, sub_roi):
+    def process_frame_global(self, frame):
 
         '''
-        处理视频帧，提取整个人脸部分并返回
-        :param frame: 视频帧，但是还可能是空为什么？？？
+        处理视频帧，提取整个人脸部分并返回   /Process  frames, extract the entire face part and return
+        :param frame:
         :param sub_roi:
         :return:
         '''
@@ -215,52 +208,43 @@ class rPPG_Extracter():
         frame_cropped = self.get_global_face(frame, key)
         frame_cropped = [frame_cropped]  # 转成三维列表和local face统一
 
-        # 用自己规定的区域提取人脸，不过没有用的到
-        if len(sub_roi) > 0:
-            print("sub_roi")
-            sub_roi_rect = get_subroi_rect(frame_cropped, sub_roi)
-            frame_cropped = crop_frame(frame_cropped, sub_roi_rect)
-            gray_frame = crop_frame(gray_frame, sub_roi_rect)
-            self.sub_roi_rect = sub_roi_rect
 
         num_pixels = frame.shape[0] * frame.shape[1]
 
         return frame_cropped, num_pixels, flag
 
-    def process_frame_local(self, frame, sub_roi):
+    def process_frame_local(self, frame):
 
         '''
-        处理视频帧，提取人脸的多个局部部分
-        :param frame: 视频帧
+        处理视频帧，提取人脸的多个局部部分 /Process  frames to extract multiple local parts of the face
+        :param frame:
         :param sub_roi:
         :return:
         '''
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # 人脸检测,返回人脸，灰色人脸，上次人脸
+        # 人脸检测 / Face Detection
 
         frame_cropped, gray_frame, self.prev_face, flag = crop_to_face(frame, gray, self.prev_face)
 
-        # 求关键点
+        # 求关键点 / find key point of face
         key = self.get_landmarks(gray, self.prev_face)
 
-        # 利用关键点分割，返回多个局部人脸
+        # 利用关键点分割，返回多个局部人脸  /segment image to different parts by key point
         frame_cropped = self.get_local_face(frame, key)
 
         num_pixels = frame.shape[0] * frame.shape[1]
 
         return frame_cropped, num_pixels, flag
 
-    def measure_rPPG(self, frame, use_classifier=False, sub_roi=[]):
+    def measure_rPPG(self, frame):
         '''
-        传入图片，测量rppg，返回的是一个二维list，不断累计
-        :param frame: 视频帧
-        :param use_classifier:
-        :param sub_roi: 感兴趣区域的脚点，也就是人脸区域，不过一般都是自动确定而不是人为指定
+        输入图片，测量图片的RGB分量均值并且保存 /
+        :param frame:
         :return:
         '''
         # frame_cropped, num_pixels = self.process_frame_global(frame, sub_roi)
-        frame_cropped, num_pixels, flag = self.process_frame_local(frame, sub_roi)
+        frame_cropped, num_pixels, flag = self.process_frame_local(frame)
 
         face_num = len(frame_cropped)
         for i in range(face_num):

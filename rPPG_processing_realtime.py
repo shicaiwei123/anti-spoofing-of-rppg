@@ -1,7 +1,6 @@
 import numpy as np
-import scipy.io as sio
 from scipy import signal
-import matplotlib.pyplot as plt
+from config import args
 
 # Params
 R = 0
@@ -10,7 +9,15 @@ B = 2
 
 
 def extract_pulse(rPPG, fftlength, fs_video):
-    # 必须要先收集那么多次照片。，小于返回0
+    '''
+
+    :param rPPG: 用来缓存需要进行fft处理的数据  /Used to cache data that needs to be processed by fft
+    :param fftlength:
+    :param fs_video: 数据采集时候的帧率/ Frame rate during data acquisition
+    :return: 一次rppg处理的结果/ result of rppg pulse extraction
+    本质就是对采集的照片,进行滤波等一系列预处理,然后fft分析 之后归一化处理再返回回去,然后就得到了一个rppg信号
+     / The essence is to perform a series of pre-processing such as filtering on the collected photos, then fft analysis, normalization  and then return to display
+    '''
     # print("rppg_num",rPPG.shape[1])
     if (rPPG.shape[1] < fftlength):
         return np.zeros(int(fftlength / 2) + 1)
@@ -19,10 +26,10 @@ def extract_pulse(rPPG, fftlength, fs_video):
     fft_roi = range(int(fftlength / 2 + 1))  # We only care about this part of the fft because it is symmetric anyway
     # fft_roi=range(151)
     bpf_div = 60 * fs_video / 2
-    b_BPF40220, a_BPF40220 = signal.butter(10, ([40 / bpf_div, 200 / bpf_div]), 'bandpass')
+    b_BPF40220, a_BPF40220 = signal.butter(10, ([args.freq[0] / bpf_div, args.freq[1] / bpf_div]), 'bandpass')
 
     col_c = np.zeros((3, fftlength))
-    skin_vec = [1,0.66667,0.5]
+    skin_vec = [1, 0.66667, 0.5]
     # skin_vec = [1, 0.66667, 0.5]
 
     for col in [R, G, B]:
