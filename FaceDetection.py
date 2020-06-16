@@ -1,13 +1,6 @@
 import cv2
-import pwd
-import os
-from skimage.feature import local_binary_pattern
-from sklearn.externals import joblib
-
-os.seteuid(pwd.getpwnam(os.getlogin()).pw_uid)
 
 import numpy as np
-from scipy.fftpack import fft
 import math
 
 import scipy.io as sio

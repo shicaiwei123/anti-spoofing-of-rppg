@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8
 from config import Settings
 from config import args
 
@@ -189,7 +189,7 @@ def pulse_process(pulse_list):
     return face_pulse_enhance, ground_pulse_enhance, mean_cor
 
 
-def update(load_frame, rPPG_extracter, settings: Settings):
+def update(load_frame, rPPG_extracter, settings=Settings):
     '''
     循环主体
     :param load_frame: 帧读取句柄，
