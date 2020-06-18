@@ -1,10 +1,10 @@
 # anti-spoofing-of-rppg
 the implement of 3D Mask Face Anti-spoofing with Remote Photoplethysmography
 
-# Introduction of project(config.py)
+# Introduction of project()
 - config.py 
     - Contains all the settings we need to configure 
--rPPG_GUI.py
+- rPPG_GUI.py
     - Entry function
     - ompleted the design of GUI interface
     - Detect if it is spoofing(Just a simple judgment, there is no data set, so SVM training is not used.)
