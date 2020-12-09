@@ -32,4 +32,7 @@ the implement of 3D Mask Face Anti-spoofing with Remote Photoplethysmography
 - reference
     - Remote Photoplethysmography Correspondence Feature for 3D Mask Face Presentation Attack Detection
     - Generalized face anti-spoofing by detecting pulse from face videos
+
+-  Face Anti-Spoofing Using Patch and Depth-Based CNNs 的实现
+    - https://github.com/shicaiwei123/patch_based_cnn
     
